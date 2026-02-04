@@ -262,16 +262,21 @@
         
         <div id="uploadSection" class="upload-section">
             <div class="upload-box" id="uploadBox">
-                <div class="upload-icon">📁</div>
-                <h2>Upload Your Dataset File</h2>
+                <div class="upload-icon">🔬</div>
+                <h2>Francis Crick Institute Datasets</h2>
                 <p style="margin: 20px 0; color: #666;">
-                    Drag and drop your <strong>crick_datasets.json</strong> file here<br>
-                    or click to browse
+                    Load data directly from OpenAlex API or upload your own JSON file
                 </p>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 30px;">
+                    <button onclick="loadFromAPI()" style="min-width: 200px;">
+                        🌐 Load from OpenAlex
+                    </button>
+                    <button onclick="document.getElementById('fileInput').click()" style="min-width: 200px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        📁 Upload JSON File
+                    </button>
+                </div>
                 <input type="file" id="fileInput" accept=".json">
-                <button onclick="document.getElementById('fileInput').click()">
-                    Choose File
-                </button>
+                <p id="statusMessage" style="margin-top: 20px; color: #666; font-style: italic;"></p>
             </div>
         </div>
         
@@ -352,8 +357,9 @@
         // File upload handling
         const uploadBox = document.getElementById('uploadBox');
         const fileInput = document.getElementById('fileInput');
+        const statusMessage = document.getElementById('statusMessage');
         
-        uploadBox.addEventListener('click', () => fileInput.click());
+        // Remove click handler from uploadBox since we have separate buttons now
         
         uploadBox.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -379,20 +385,99 @@
             }
         });
         
+        function setStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.style.color = isError ? '#ef4444' : '#667eea';
+        }
+        
+        async function loadFromAPI() {
+            setStatus('Loading datasets from OpenAlex API... This may take a minute.');
+            
+            const crickROR = 'https://ror.org/029chgv08';
+            const baseUrl = 'https://api.openalex.org/works';
+            
+            try {
+                allDatasets = [];
+                let page = 1;
+                let hasMore = true;
+                
+                while (hasMore) {
+                    const params = new URLSearchParams({
+                        filter: `institutions.ror:${crickROR},type:dataset`,
+                        'per-page': 200,
+                        page: page,
+                        mailto: 'user@example.com' // Users should replace this
+                    });
+                    
+                    setStatus(`Loading page ${page} from OpenAlex...`);
+                    
+                    const response = await fetch(`${baseUrl}?${params}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    const results = data.results || [];
+                    
+                    if (results.length === 0) {
+                        hasMore = false;
+                    } else {
+                        allDatasets = allDatasets.concat(results);
+                        setStatus(`Loaded ${allDatasets.length} datasets so far...`);
+                        
+                        // Check if there are more pages
+                        if (results.length < 200) {
+                            hasMore = false;
+                        } else {
+                            page++;
+                            // Small delay to be polite to the API
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                    }
+                }
+                
+                if (allDatasets.length === 0) {
+                    setStatus('No datasets found. Try uploading a JSON file instead.', true);
+                    return;
+                }
+                
+                filteredDatasets = [...allDatasets];
+                setStatus(`Successfully loaded ${allDatasets.length} datasets!`);
+                
+                // Small delay to show success message
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                initializeDashboard();
+                
+            } catch (error) {
+                console.error('Error loading from API:', error);
+                setStatus(`Error: ${error.message}. Try uploading a JSON file instead.`, true);
+            }
+        }
+        
         function handleFile(file) {
             if (!file.name.endsWith('.json')) {
-                alert('Please upload a JSON file');
+                setStatus('Please upload a JSON file', true);
                 return;
             }
+            
+            setStatus('Reading file...');
             
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     allDatasets = JSON.parse(e.target.result);
                     filteredDatasets = [...allDatasets];
-                    initializeDashboard();
+                    setStatus(`Successfully loaded ${allDatasets.length} datasets from file!`);
+                    
+                    // Small delay to show success message
+                    setTimeout(() => {
+                        initializeDashboard();
+                    }, 500);
+                    
                 } catch (error) {
-                    alert('Error parsing JSON file: ' + error.message);
+                    setStatus('Error parsing JSON file: ' + error.message, true);
                 }
             };
             reader.readAsText(file);
