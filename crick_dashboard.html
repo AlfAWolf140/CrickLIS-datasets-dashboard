@@ -257,7 +257,7 @@
     <div class="container">
         <div class="header">
             <h1>🔬 Francis Crick Institute</h1>
-            <p>Datasets Dashboard - OpenAlex Analytics New File</p>
+            <p>Datasets Dashboard - OpenAlex Analytics</p>
         </div>
         
         <div id="uploadSection" class="upload-section">
@@ -330,7 +330,15 @@
             </div>
             
             <div class="table-container">
-                <h2 style="margin-bottom: 20px; color: #333;">Top 20 Most Cited Datasets</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="color: #333; margin: 0;" id="tableTitle">Top 20 Most Cited Datasets</h2>
+                        <p id="tableSubtitle" style="color: #666; margin: 5px 0 0 0; font-size: 0.9em;"></p>
+                    </div>
+                    <button onclick="clearTableFilter()" id="clearFilterBtn" class="hidden" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        Clear Filter
+                    </button>
+                </div>
                 <div style="overflow-x: auto;">
                     <table id="datasetsTable">
                         <thead>
@@ -353,6 +361,8 @@
     <script>
         let allDatasets = [];
         let filteredDatasets = [];
+        let tableFilteredDatasets = null; // For chart click filtering
+        let tableFilterDescription = ''; // Description of current filter
         
         // File upload handling
         const uploadBox = document.getElementById('uploadBox');
@@ -555,6 +565,12 @@
                 height: 300
             }, {responsive: true});
             
+            // Add click handler for year chart
+            document.getElementById('yearChart').on('plotly_click', function(data) {
+                const year = data.points[0].x;
+                filterTableByYear(year);
+            });
+            
             // Open Access pie chart
             const oaCount = filteredDatasets.filter(d => d.open_access?.is_oa).length;
             const closedCount = filteredDatasets.length - oaCount;
@@ -572,6 +588,12 @@
                 margin: { t: 20, b: 20, l: 20, r: 20 },
                 height: 300
             }, {responsive: true});
+            
+            // Add click handler for OA chart
+            document.getElementById('oaChart').on('plotly_click', function(data) {
+                const label = data.points[0].label;
+                filterTableByOA(label);
+            });
             
             // Citation histogram
             const citations = filteredDatasets.map(d => d.cited_by_count || 0);
@@ -619,10 +641,19 @@
                 xaxis: { title: 'Number of Datasets' },
                 height: 300
             }, {responsive: true});
+            
+            // Add click handler for concepts chart
+            document.getElementById('conceptsChart').on('plotly_click', function(data) {
+                const concept = data.points[0].y;
+                filterTableByConcept(concept);
+            });
         }
         
         function updateTable() {
-            const topDatasets = [...filteredDatasets]
+            // Use table-specific filter if active, otherwise use regular filtered datasets
+            const datasetsToShow = tableFilteredDatasets || filteredDatasets;
+            
+            const topDatasets = [...datasetsToShow]
                 .sort((a, b) => (b.cited_by_count || 0) - (a.cited_by_count || 0))
                 .slice(0, 20);
             
@@ -638,6 +669,57 @@
             `).join('');
             
             document.getElementById('tableBody').innerHTML = tableHTML;
+            
+            // Update table title and subtitle
+            if (tableFilteredDatasets) {
+                document.getElementById('tableTitle').textContent = `Datasets: ${tableFilterDescription}`;
+                document.getElementById('tableSubtitle').textContent = `Showing ${Math.min(20, datasetsToShow.length)} of ${datasetsToShow.length} matching datasets`;
+                document.getElementById('clearFilterBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('tableTitle').textContent = 'Top 20 Most Cited Datasets';
+                document.getElementById('tableSubtitle').textContent = '';
+                document.getElementById('clearFilterBtn').classList.add('hidden');
+            }
+        }
+        
+        function filterTableByYear(year) {
+            tableFilteredDatasets = filteredDatasets.filter(d => d.publication_year === parseInt(year));
+            tableFilterDescription = `Published in ${year}`;
+            updateTable();
+            
+            // Scroll to table
+            document.getElementById('datasetsTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function filterTableByOA(label) {
+            const isOA = label === 'Open Access';
+            tableFilteredDatasets = filteredDatasets.filter(d => {
+                const datasetOA = d.open_access?.is_oa || false;
+                return datasetOA === isOA;
+            });
+            tableFilterDescription = label;
+            updateTable();
+            
+            // Scroll to table
+            document.getElementById('datasetsTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function filterTableByConcept(concept) {
+            tableFilteredDatasets = filteredDatasets.filter(d => {
+                const concepts = d.concepts || [];
+                return concepts.some(c => c.display_name === concept);
+            });
+            tableFilterDescription = `Topic: ${concept}`;
+            updateTable();
+            
+            // Scroll to table
+            document.getElementById('datasetsTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function clearTableFilter() {
+            tableFilteredDatasets = null;
+            tableFilterDescription = '';
+            updateTable();
         }
         
         function applyFilters() {
@@ -667,6 +749,10 @@
                 
                 return true;
             });
+            
+            // Clear table-specific filter when applying main filters
+            tableFilteredDatasets = null;
+            tableFilterDescription = '';
             
             updateDashboard();
         }
