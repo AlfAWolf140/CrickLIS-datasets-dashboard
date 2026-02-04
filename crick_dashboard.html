@@ -653,9 +653,13 @@
             // Use table-specific filter if active, otherwise use regular filtered datasets
             const datasetsToShow = tableFilteredDatasets || filteredDatasets;
             
+            // If table is filtered (from chart click), show all results
+            // Otherwise, show top 20
+            const limit = tableFilteredDatasets ? datasetsToShow.length : 20;
+            
             const topDatasets = [...datasetsToShow]
                 .sort((a, b) => (b.cited_by_count || 0) - (a.cited_by_count || 0))
-                .slice(0, 20);
+                .slice(0, limit);
             
             const tableHTML = topDatasets.map((d, i) => `
                 <tr>
@@ -673,7 +677,7 @@
             // Update table title and subtitle
             if (tableFilteredDatasets) {
                 document.getElementById('tableTitle').textContent = `Datasets: ${tableFilterDescription}`;
-                document.getElementById('tableSubtitle').textContent = `Showing ${Math.min(20, datasetsToShow.length)} of ${datasetsToShow.length} matching datasets`;
+                document.getElementById('tableSubtitle').textContent = `Showing all ${datasetsToShow.length} matching datasets`;
                 document.getElementById('clearFilterBtn').classList.remove('hidden');
             } else {
                 document.getElementById('tableTitle').textContent = 'Top 20 Most Cited Datasets';
