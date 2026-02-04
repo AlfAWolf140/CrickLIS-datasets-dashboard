@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Francis Crick Institute Datasets Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+        
+        .stat-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 1em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .controls {
+            padding: 30px 40px;
+            background: white;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            padding: 40px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .table-container {
+            padding: 40px;
+            background: white;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .doi-link {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .doi-link:hover {
+            text-decoration: underline;
+        }
+        
+        .upload-section {
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+        
+        .upload-box {
+            background: white;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+        
+        .upload-box.dragover {
+            background: #e8eaf6;
+            border-color: #764ba2;
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 Francis Crick Institute</h1>
+            <p>Datasets Dashboard - OpenAlex Analytics</p>
+        </div>
+        
+        <div id="uploadSection" class="upload-section">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">📁</div>
+                <h2>Upload Your Dataset File</h2>
+                <p style="margin: 20px 0; color: #666;">
+                    Drag and drop your <strong>crick_datasets.json</strong> file here<br>
+                    or click to browse
+                </p>
+                <input type="file" id="fileInput" accept=".json">
+                <button onclick="document.getElementById('fileInput').click()">
+                    Choose File
+                </button>
+            </div>
+        </div>
+        
+        <div id="dashboard" class="hidden">
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div class="controls">
+                <h2 style="margin-bottom: 20px; color: #333;">Filters & Search</h2>
+                <div class="filters">
+                    <div class="control-group">
+                        <label for="searchInput">Search Titles</label>
+                        <input type="text" id="searchInput" placeholder="Enter keywords...">
+                    </div>
+                    <div class="control-group">
+                        <label for="yearStart">Year From</label>
+                        <input type="number" id="yearStart" placeholder="e.g., 2015">
+                    </div>
+                    <div class="control-group">
+                        <label for="yearEnd">Year To</label>
+                        <input type="number" id="yearEnd" placeholder="e.g., 2024">
+                    </div>
+                    <div class="control-group">
+                        <label for="oaFilter">Open Access</label>
+                        <select id="oaFilter">
+                            <option value="all">All Datasets</option>
+                            <option value="true">Open Access Only</option>
+                            <option value="false">Closed Only</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="applyFilters()" style="margin-top: 20px;">Apply Filters</button>
+            </div>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Publications by Year</div>
+                    <div id="yearChart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Open Access Distribution</div>
+                    <div id="oaChart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Citation Distribution</div>
+                    <div id="citationChart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Top Research Areas</div>
+                    <div id="conceptsChart"></div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <h2 style="margin-bottom: 20px; color: #333;">Top 20 Most Cited Datasets</h2>
+                <div style="overflow-x: auto;">
+                    <table id="datasetsTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Title</th>
+                                <th>Year</th>
+                                <th>Citations</th>
+                                <th>Open Access</th>
+                                <th>DOI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let allDatasets = [];
+        let filteredDatasets = [];
+        
+        // File upload handling
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadBox.addEventListener('click', () => fileInput.click());
+        
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+        
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+        
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.name.endsWith('.json')) {
+                alert('Please upload a JSON file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    allDatasets = JSON.parse(e.target.result);
+                    filteredDatasets = [...allDatasets];
+                    initializeDashboard();
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function initializeDashboard() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            updateDashboard();
+        }
+        
+        function updateDashboard() {
+            updateStats();
+            updateCharts();
+            updateTable();
+        }
+        
+        function updateStats() {
+            const totalCitations = filteredDatasets.reduce((sum, d) => sum + (d.cited_by_count || 0), 0);
+            const avgCitations = totalCitations / filteredDatasets.length || 0;
+            const oaCount = filteredDatasets.filter(d => d.open_access?.is_oa).length;
+            const oaPercent = (oaCount / filteredDatasets.length * 100) || 0;
+            
+            const years = filteredDatasets.map(d => d.publication_year).filter(y => y);
+            const yearRange = years.length > 0 ? `${Math.min(...years)} - ${Math.max(...years)}` : 'N/A';
+            
+            const statsHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${filteredDatasets.length}</div>
+                    <div class="stat-label">Total Datasets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalCitations.toLocaleString()}</div>
+                    <div class="stat-label">Total Citations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${avgCitations.toFixed(1)}</div>
+                    <div class="stat-label">Avg Citations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${oaPercent.toFixed(1)}%</div>
+                    <div class="stat-label">Open Access</div>
+                </div>
+            `;
+            
+            document.getElementById('statsGrid').innerHTML = statsHTML;
+        }
+        
+        function updateCharts() {
+            // Year chart
+            const yearCounts = {};
+            filteredDatasets.forEach(d => {
+                const year = d.publication_year;
+                if (year) {
+                    yearCounts[year] = (yearCounts[year] || 0) + 1;
+                }
+            });
+            
+            const years = Object.keys(yearCounts).sort();
+            const counts = years.map(y => yearCounts[y]);
+            
+            Plotly.newPlot('yearChart', [{
+                x: years,
+                y: counts,
+                type: 'bar',
+                marker: {
+                    color: '#667eea',
+                    line: { color: '#764ba2', width: 1 }
+                }
+            }], {
+                margin: { t: 20, b: 40, l: 50, r: 20 },
+                xaxis: { title: 'Year' },
+                yaxis: { title: 'Number of Datasets' },
+                height: 300
+            }, {responsive: true});
+            
+            // Open Access pie chart
+            const oaCount = filteredDatasets.filter(d => d.open_access?.is_oa).length;
+            const closedCount = filteredDatasets.length - oaCount;
+            
+            Plotly.newPlot('oaChart', [{
+                values: [oaCount, closedCount],
+                labels: ['Open Access', 'Closed'],
+                type: 'pie',
+                marker: {
+                    colors: ['#4ade80', '#f87171']
+                },
+                textinfo: 'label+percent',
+                textposition: 'inside'
+            }], {
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                height: 300
+            }, {responsive: true});
+            
+            // Citation histogram
+            const citations = filteredDatasets.map(d => d.cited_by_count || 0);
+            
+            Plotly.newPlot('citationChart', [{
+                x: citations,
+                type: 'histogram',
+                nbinsx: 30,
+                marker: {
+                    color: '#667eea',
+                    line: { color: '#764ba2', width: 1 }
+                }
+            }], {
+                margin: { t: 20, b: 40, l: 50, r: 20 },
+                xaxis: { title: 'Number of Citations' },
+                yaxis: { title: 'Number of Datasets' },
+                height: 300
+            }, {responsive: true});
+            
+            // Top concepts chart
+            const conceptCounts = {};
+            filteredDatasets.forEach(d => {
+                const concepts = d.concepts || [];
+                concepts.filter(c => c.level === 0).forEach(c => {
+                    const name = c.display_name;
+                    conceptCounts[name] = (conceptCounts[name] || 0) + 1;
+                });
+            });
+            
+            const topConcepts = Object.entries(conceptCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            Plotly.newPlot('conceptsChart', [{
+                x: topConcepts.map(c => c[1]),
+                y: topConcepts.map(c => c[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                    color: '#f59e0b',
+                    line: { color: '#d97706', width: 1 }
+                }
+            }], {
+                margin: { t: 20, b: 40, l: 150, r: 20 },
+                xaxis: { title: 'Number of Datasets' },
+                height: 300
+            }, {responsive: true});
+        }
+        
+        function updateTable() {
+            const topDatasets = [...filteredDatasets]
+                .sort((a, b) => (b.cited_by_count || 0) - (a.cited_by_count || 0))
+                .slice(0, 20);
+            
+            const tableHTML = topDatasets.map((d, i) => `
+                <tr>
+                    <td><strong>${i + 1}</strong></td>
+                    <td>${d.title || 'No title'}</td>
+                    <td>${d.publication_year || 'N/A'}</td>
+                    <td><strong>${(d.cited_by_count || 0).toLocaleString()}</strong></td>
+                    <td>${d.open_access?.is_oa ? '✅ Yes' : '❌ No'}</td>
+                    <td>${d.doi ? `<a href="${d.doi}" class="doi-link" target="_blank">View</a>` : 'N/A'}</td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('tableBody').innerHTML = tableHTML;
+        }
+        
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const yearStart = parseInt(document.getElementById('yearStart').value) || 0;
+            const yearEnd = parseInt(document.getElementById('yearEnd').value) || 9999;
+            const oaFilter = document.getElementById('oaFilter').value;
+            
+            filteredDatasets = allDatasets.filter(d => {
+                // Search filter
+                if (searchTerm && !d.title?.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                
+                // Year filter
+                const year = d.publication_year || 0;
+                if (year < yearStart || year > yearEnd) {
+                    return false;
+                }
+                
+                // OA filter
+                if (oaFilter !== 'all') {
+                    const isOA = d.open_access?.is_oa || false;
+                    if (oaFilter === 'true' && !isOA) return false;
+                    if (oaFilter === 'false' && isOA) return false;
+                }
+                
+                return true;
+            });
+            
+            updateDashboard();
+        }
+    </script>
+</body>
+</html>
