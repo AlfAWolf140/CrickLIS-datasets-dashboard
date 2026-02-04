@@ -349,6 +349,7 @@
                                 <th>Citations</th>
                                 <th>Open Access</th>
                                 <th>DOI</th>
+                                <th>OpenAlex</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody"></tbody>
@@ -669,6 +670,7 @@
                     <td><strong>${(d.cited_by_count || 0).toLocaleString()}</strong></td>
                     <td>${d.open_access?.is_oa ? '✅ Yes' : '❌ No'}</td>
                     <td>${d.doi ? `<a href="${d.doi}" class="doi-link" target="_blank">View</a>` : 'N/A'}</td>
+                    <td>${d.id ? `<a href="${d.id}" class="doi-link" target="_blank">View</a>` : 'N/A'}</td>
                 </tr>
             `).join('');
             
