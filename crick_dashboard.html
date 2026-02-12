@@ -257,7 +257,7 @@
     <div class="container">
         <div class="header">
             <h1>🔬 Francis Crick Institute</h1>
-            <p>Datasets Dashboard V2 - OpenAlex Analytics</p>
+            <p>Datasets Dashboard - OpenAlex Analytics</p>
         </div>
         
         <div id="uploadSection" class="upload-section">
@@ -701,6 +701,12 @@
                 height: 400
             }, {responsive: true});
             
+            // Add click handler for sources chart
+            document.getElementById('sourcesChart').on('plotly_click', function(data) {
+                const sourceName = data.points[0].y;
+                filterTableBySource(sourceName);
+            });
+            
             // Dataset types chart
             const typeCounts = {};
             filteredDatasets.forEach(d => {
@@ -762,6 +768,20 @@
                 document.getElementById('tableSubtitle').textContent = '';
                 document.getElementById('clearFilterBtn').classList.add('hidden');
             }
+        }
+        
+        function filterTableBySource(sourceName) {
+            tableFilteredDatasets = filteredDatasets.filter(d => {
+                const primaryLocation = d.primary_location || {};
+                const source = primaryLocation.source || {};
+                const datasetSource = source.display_name || '';
+                return datasetSource === sourceName;
+            });
+            tableFilterDescription = `Source: ${sourceName}`;
+            updateTable();
+            
+            // Scroll to table
+            document.getElementById('datasetsTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         
         function filterTableByYear(year) {
