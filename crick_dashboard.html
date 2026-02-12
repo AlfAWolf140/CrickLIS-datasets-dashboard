@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Francis Crick Institute Datasets Dashboard v2</title>
+    <title>Francis Crick Institute Datasets Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         * {
@@ -307,6 +307,19 @@
                         </select>
                     </div>
                 </div>
+                <div style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #333;">Exclude Sources</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="excludeFacultyOpinions" checked style="margin-right: 8px; cursor: pointer; width: auto;">
+                            <span>Exclude Faculty Opinions</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="excludePreprints" style="margin-right: 8px; cursor: pointer; width: auto;">
+                            <span>Exclude Preprints (bioRxiv, medRxiv)</span>
+                        </label>
+                    </div>
+                </div>
                 <button onclick="applyFilters()" style="margin-top: 20px;">Apply Filters</button>
             </div>
             
@@ -412,7 +425,8 @@
         async function loadFromAPI() {
             setStatus('Loading datasets from OpenAlex API... This may take a minute.');
             
-            const crickROR = 'https://ror.org/04tnbqb63';
+            const crickROR = 'https://ror.org/04tnbqb63';  // Francis Crick Institute (CORRECT)
+            // NOTE: https://ror.org/029chgv08 is the Wellcome Trust, NOT the Crick!
             const baseUrl = 'https://api.openalex.org/works';
             
             try {
@@ -506,7 +520,8 @@
             document.getElementById('uploadSection').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             
-            updateDashboard();
+            // Apply default exclusions on load
+            applyFilters();
         }
         
         function updateDashboard() {
@@ -794,6 +809,8 @@
             const yearStart = parseInt(document.getElementById('yearStart').value) || 0;
             const yearEnd = parseInt(document.getElementById('yearEnd').value) || 9999;
             const oaFilter = document.getElementById('oaFilter').value;
+            const excludeFacultyOpinions = document.getElementById('excludeFacultyOpinions').checked;
+            const excludePreprints = document.getElementById('excludePreprints').checked;
             
             filteredDatasets = allDatasets.filter(d => {
                 // Search filter
@@ -812,6 +829,21 @@
                     const isOA = d.open_access?.is_oa || false;
                     if (oaFilter === 'true' && !isOA) return false;
                     if (oaFilter === 'false' && isOA) return false;
+                }
+                
+                // Source exclusion filters
+                const primaryLocation = d.primary_location || {};
+                const source = primaryLocation.source || {};
+                const sourceName = (source.display_name || '').toLowerCase();
+                
+                // Exclude Faculty Opinions
+                if (excludeFacultyOpinions && sourceName.includes('faculty opinions')) {
+                    return false;
+                }
+                
+                // Exclude preprints
+                if (excludePreprints && (sourceName.includes('biorxiv') || sourceName.includes('medrxiv'))) {
+                    return false;
                 }
                 
                 return true;
