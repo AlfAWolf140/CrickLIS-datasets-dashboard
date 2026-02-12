@@ -327,6 +327,14 @@
                     <div class="chart-title">Top Research Areas</div>
                     <div id="conceptsChart"></div>
                 </div>
+                <div class="chart-container">
+                    <div class="chart-title">Data Sources / Publishers</div>
+                    <div id="sourcesChart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Dataset Types</div>
+                    <div id="typesChart"></div>
+                </div>
             </div>
             
             <div class="table-container">
@@ -404,7 +412,7 @@
         async function loadFromAPI() {
             setStatus('Loading datasets from OpenAlex API... This may take a minute.');
             
-            const crickROR = 'https://ror.org/04tnbqb63';
+            const crickROR = 'https://ror.org/029chgv08';
             const baseUrl = 'https://api.openalex.org/works';
             
             try {
@@ -648,6 +656,59 @@
                 const concept = data.points[0].y;
                 filterTableByConcept(concept);
             });
+            
+            // Data sources chart
+            const sourceCounts = {};
+            filteredDatasets.forEach(d => {
+                const primaryLocation = d.primary_location || {};
+                const source = primaryLocation.source || {};
+                const sourceName = source.display_name || 'Unknown Source';
+                
+                sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
+            });
+            
+            const topSources = Object.entries(sourceCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 15);
+            
+            Plotly.newPlot('sourcesChart', [{
+                x: topSources.map(s => s[1]),
+                y: topSources.map(s => s[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                    color: '#8b5cf6',
+                    line: { color: '#7c3aed', width: 1 }
+                }
+            }], {
+                margin: { t: 20, b: 40, l: 200, r: 20 },
+                xaxis: { title: 'Number of Datasets' },
+                height: 400
+            }, {responsive: true});
+            
+            // Dataset types chart
+            const typeCounts = {};
+            filteredDatasets.forEach(d => {
+                const type = d.type || 'unknown';
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+            });
+            
+            const typeEntries = Object.entries(typeCounts)
+                .sort((a, b) => b[1] - a[1]);
+            
+            Plotly.newPlot('typesChart', [{
+                values: typeEntries.map(t => t[1]),
+                labels: typeEntries.map(t => t[0]),
+                type: 'pie',
+                marker: {
+                    colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                },
+                textinfo: 'label+percent',
+                textposition: 'inside'
+            }], {
+                margin: { t: 20, b: 20, l: 20, r: 20 },
+                height: 300
+            }, {responsive: true});
         }
         
         function updateTable() {
