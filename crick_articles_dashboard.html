@@ -257,7 +257,7 @@
     <div class="container">
         <div class="header">
             <h1>🔬 Francis Crick Institute</h1>
-            <p>Journal Articles Dashboard - OpenAlex Analytics</p>
+            <p>Journal Articles Dashboard (2016+) - OpenAlex Analytics</p>
         </div>
         
         <div id="uploadSection" class="upload-section">
@@ -419,7 +419,7 @@
         }
         
         async function loadFromAPI() {
-            setStatus('Loading articles from OpenAlex API... This may take a few minutes.');
+            setStatus('Loading articles from 2016 onwards from OpenAlex API...');
             
             const crickROR = 'https://ror.org/04tnbqb63';  // Francis Crick Institute (CORRECT)
             // NOTE: https://ror.org/029chgv08 is the Wellcome Trust, NOT the Crick!
@@ -432,7 +432,7 @@
                 
                 while (hasMore) {
                     const params = new URLSearchParams({
-                        filter: `institutions.ror:${crickROR},type:article`,
+                        filter: `institutions.ror:${crickROR},type:article,publication_year:>2015`,
                         'per-page': 200,
                         page: page,
                         mailto: 'user@example.com' // Users should replace this
@@ -558,31 +558,50 @@
         }
         
         function updateCharts() {
-            // Year chart
-            const yearCounts = {};
+            // Year chart with OA breakdown
+            const yearData = {};
             filteredDatasets.forEach(d => {
                 const year = d.publication_year;
                 if (year) {
-                    yearCounts[year] = (yearCounts[year] || 0) + 1;
+                    if (!yearData[year]) {
+                        yearData[year] = { oa: 0, closed: 0 };
+                    }
+                    const isOA = d.open_access?.is_oa || false;
+                    if (isOA) {
+                        yearData[year].oa++;
+                    } else {
+                        yearData[year].closed++;
+                    }
                 }
             });
             
-            const years = Object.keys(yearCounts).sort();
-            const counts = years.map(y => yearCounts[y]);
+            const years = Object.keys(yearData).sort();
+            const oaCounts = years.map(y => yearData[y].oa);
+            const closedCounts = years.map(y => yearData[y].closed);
             
-            Plotly.newPlot('yearChart', [{
-                x: years,
-                y: counts,
-                type: 'bar',
-                marker: {
-                    color: '#667eea',
-                    line: { color: '#764ba2', width: 1 }
+            Plotly.newPlot('yearChart', [
+                {
+                    x: years,
+                    y: oaCounts,
+                    name: 'Open Access',
+                    type: 'bar',
+                    marker: { color: '#4ade80' }
+                },
+                {
+                    x: years,
+                    y: closedCounts,
+                    name: 'Closed Access',
+                    type: 'bar',
+                    marker: { color: '#f87171' }
                 }
-            }], {
+            ], {
+                barmode: 'stack',
                 margin: { t: 20, b: 40, l: 50, r: 20 },
                 xaxis: { title: 'Year' },
-                yaxis: { title: 'Number of Datasets' },
-                height: 300
+                yaxis: { title: 'Number of Articles' },
+                height: 300,
+                showlegend: true,
+                legend: { orientation: 'h', y: 1.1 }
             }, {responsive: true});
             
             // Add click handler for year chart
