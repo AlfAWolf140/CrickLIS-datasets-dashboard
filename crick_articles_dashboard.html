@@ -326,6 +326,10 @@
                             <input type="checkbox" id="excludeZenodo" checked style="margin-right: 8px; cursor: pointer; width: auto;">
                             <span>Exclude Zenodo</span>
                         </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="excludeUnknownSource" style="margin-right: 8px; cursor: pointer; width: auto;">
+                            <span>Exclude Unknown Source</span>
+                        </label>
                     </div>
                 </div>
                 <button onclick="applyFilters()" style="margin-top: 20px;">Apply Filters</button>
@@ -773,7 +777,7 @@
             tableFilteredDatasets = filteredDatasets.filter(d => {
                 const primaryLocation = d.primary_location || {};
                 const source = primaryLocation.source || {};
-                const datasetSource = source.display_name || '';
+                const datasetSource = source.display_name || 'Unknown Source';
                 return datasetSource === sourceName;
             });
             tableFilterDescription = `Source: ${sourceName}`;
@@ -832,6 +836,7 @@
             const excludePreprints = document.getElementById('excludePreprints').checked;
             const excludeFigshare = document.getElementById('excludeFigshare').checked;
             const excludeZenodo = document.getElementById('excludeZenodo').checked;
+            const excludeUnknownSource = document.getElementById('excludeUnknownSource').checked;
             
             filteredDatasets = allDatasets.filter(d => {
                 // Search filter
@@ -856,6 +861,11 @@
                 const primaryLocation = d.primary_location || {};
                 const source = primaryLocation.source || {};
                 const sourceName = (source.display_name || '').toLowerCase();
+                
+                // Exclude unknown/missing sources
+                if (excludeUnknownSource && (!sourceName || sourceName === '')) {
+                    return false;
+                }
                 
                 // Exclude Faculty Opinions
                 if (excludeFacultyOpinions && sourceName.includes('faculty opinions')) {
