@@ -318,6 +318,14 @@
                             <input type="checkbox" id="excludePreprints" checked style="margin-right: 8px; cursor: pointer; width: auto;">
                             <span>Exclude Preprints (bioRxiv, medRxiv)</span>
                         </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="excludeFigshare" checked style="margin-right: 8px; cursor: pointer; width: auto;">
+                            <span>Exclude Figshare</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="excludeZenodo" checked style="margin-right: 8px; cursor: pointer; width: auto;">
+                            <span>Exclude Zenodo</span>
+                        </label>
                     </div>
                 </div>
                 <button onclick="applyFilters()" style="margin-top: 20px;">Apply Filters</button>
@@ -822,6 +830,8 @@
             const oaFilter = document.getElementById('oaFilter').value;
             const excludeFacultyOpinions = document.getElementById('excludeFacultyOpinions').checked;
             const excludePreprints = document.getElementById('excludePreprints').checked;
+            const excludeFigshare = document.getElementById('excludeFigshare').checked;
+            const excludeZenodo = document.getElementById('excludeZenodo').checked;
             
             filteredDatasets = allDatasets.filter(d => {
                 // Search filter
@@ -854,6 +864,16 @@
                 
                 // Exclude preprints
                 if (excludePreprints && (sourceName.includes('biorxiv') || sourceName.includes('medrxiv'))) {
+                    return false;
+                }
+                
+                // Exclude Figshare
+                if (excludeFigshare && sourceName.includes('figshare')) {
+                    return false;
+                }
+                
+                // Exclude Zenodo
+                if (excludeZenodo && sourceName.includes('zenodo')) {
                     return false;
                 }
                 
